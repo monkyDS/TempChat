@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TempChat - Móvil</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="chat-page">
+  <header>
+    <div class="logo">🧩 TempChat</div>
+    <button id="logoutBtn" class="logout">Cerrar sesión</button>
+  </header>
+
+  <!-- Área del chat -->
+  <main id="chatContainer" class="chat-container hidden">
+    <div id="messages" class="messages"></div>
+
+    <!-- 🟦 ZONA DE ARRASTRE -->
+    <div id="dropZone" class="drop-zone hidden">
+      Arrastra tus archivos aquí 📂
+    </div>
+
+    <!-- Vista previa MULTIPLE de archivos -->
+    <div id="filePreview" class="file-preview hidden"></div>
+
+    <div class="input-area">
+
+      <!-- Caja de texto -->
+      <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+
+      <!-- Botón clip -->
+      <label for="fileInput" class="clip-btn">📎</label>
+
+      <!-- AHORA PERMITE MULTIPLES ARCHIVOS -->
+      <input type="file" id="fileInput" multiple style="display:none">
+
+      <!-- Botón enviar -->
+      <button id="sendBtn" class="send-btn">✈️</button>
+
+    </div>
+  </main>
+
+  <!-- Área de conexión -->
+  <div id="connectArea" class="connect-area">
+    <h2>Conéctate con tu PC</h2>
+    <input type="text" id="codeInput" placeholder="Ingresa el código de conexión">
+    <button id="connectBtn">Conectar</button>
+  </div>
+
+  <footer>
+    <p>© 2025 TempChat | Conectado Como Invitado</p>
+  </footer>
+
+  <script>
+
+    /* ========= FIX PARA EVITAR DESCONEXIONES ========= */
+    const ws = new WebSocket(
+      location.hostname === "localhost"
+        ? `ws://${location.host}`
+        : "wss://segundochat-ehxrhade.deployra.app"
+    );
+    /* ================================================= */
+
+    const codeInput = document.getElementById('codeInput');
+    const connectBtn = document.getElementById('connectBtn');
+
+    const chatContainer = document.getElementById('chatContainer');
+    const connectArea = document.getElementById('connectArea');
+    const messagesDiv = document.getElementById('messages');
+
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    const fileInput = document.getElementById('fileInput');
+    const filePreview = document.getElementById('filePreview');
+
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    /* -------- ARRAY DONDE GUARDAMOS LOS ARCHIVOS -------- */
+    let selectedFiles = [];
+
+    /* ------------------- CONECTAR ------------------- */
+    connectBtn.onclick = () => {
+      const code = codeInput.value.trim();
+      if (code) ws.send(JSON.stringify({ type: "register-mobile", code }));
+    };
+
+    /****** PING PARA MANTENER ACTIVA LA CONEXIÓN ******/
+    setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 14000);
+
+    /* FUNCION SCROLL SEGURO EN MOVIL */
+    function safeScroll() {
+      requestAnimationFrame(() => {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+    }
+
+    /* ⭐ IMPORTANTE: Mantener conexión viva (cliente responde al ping del servidor) */
+  ws.onpong = () => {
+    // Solo necesitamos que exista para evitar timeout
+    // El servidor actual ya hace ping, así que esto evita cierres
+  };
+
+    /* -------- ARCHIVO: MULTIPLE PREVIEW -------- */
+    fileInput.addEventListener("change", () => {
+
+      // Agregar nuevos archivos sin borrar los anteriores
+      selectedFiles = selectedFiles.concat(Array.from(fileInput.files));
+
+      updatePreview();
+    });
+
+    /* -------- ACTUALIZAR VISTA PREVIA MULTIPLE -------- */
+    function updatePreview() {
+
+      filePreview.innerHTML = "";
+
+      if (selectedFiles.length === 0) {
+        filePreview.classList.add("hidden");
+        return;
+      }
+
+      filePreview.classList.remove("hidden");
+
+      selectedFiles.forEach((file, index) => {
+
+        const item = document.createElement("div");
+        item.className = "preview-item";
+
+        item.innerHTML = `
+          <span>📄 <strong>${file.name}</strong></span>
+          <span class="remove-file" data-index="${index}">✖</span>
+        `;
+
+        filePreview.appendChild(item);
+      });
+
+      // Acción de eliminar archivo individual
+      document.querySelectorAll(".remove-file").forEach(btn => {
+        btn.onclick = () => {
+          const i = btn.getAttribute("data-index");
+          selectedFiles.splice(i, 1);
+          updatePreview();
+        };
+      });
+    }
+
+    /* ------------------- RECIBIR MENSAJES ------------------- */
+    ws.onmessage = event => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "connected") {
+        connectArea.classList.add("hidden");
+        chatContainer.classList.remove("hidden");
+      }
+
+      if (data.type === "message") {
+        const msg = document.createElement("div");
+
+        const isIncoming = data.from === "pc";
+        msg.className = `message ${isIncoming ? "incoming" : "outgoing"}`;
+
+        if (data.file) {
+          msg.innerHTML = `
+            <strong>${isIncoming ? "PC" : "Mobile"}:</strong>
+            <a href="${data.file}" download="${data.filename}">📎 ${data.filename}</a>
+          `;
+        } else {
+          msg.innerHTML = `<strong>${isIncoming ? "PC" : "Mobile"}:</strong> ${data.content}`;
+        }
+
+        messagesDiv.appendChild(msg);
+        /*messagesDiv.scrollTop = messagesDiv.scrollHeight;*/
+
+        /* ⭐ ESTA LÍNEA para hacer scroll al final */
+        safeScroll();
+      }
+
+      if (data.type === "logout") location.href = "index.html";
+    };
+
+    /* ------------------- ENVIAR MENSAJES ------------------- */
+    sendBtn.onclick = sendMessage;
+
+    messageInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function sendMessage() {
+
+      const text = messageInput.value.trim();
+
+      /* -------- ENVIAR ARCHIVOS (VARIOS) -------- */
+      if (selectedFiles.length > 0) {
+
+        selectedFiles.forEach(file => {
+          const reader = new FileReader();
+
+          reader.onload = () => {
+
+            ws.send(JSON.stringify({
+              type: "message",
+              file: reader.result,
+              filename: file.name
+            }));
+
+            addLocalMessage(
+              `<a href="${reader.result}" download="${file.name}">📎 ${file.name}</a>`
+            );
+          };
+
+          reader.readAsDataURL(file);
+        });
+
+        selectedFiles = [];
+        updatePreview();
+        fileInput.value = "";
+      }
+
+      /* -------- ENVIAR TEXTO -------- */
+      if (text) {
+        ws.send(JSON.stringify({ type: "message", content: text }));
+        addLocalMessage(text);
+        messageInput.value = "";
+      }
+    }
+
+    function addLocalMessage(content) {
+      const msg = document.createElement("div");
+      msg.className = "message outgoing";
+      msg.innerHTML = `<strong>Mobile:</strong> ${content}`;
+
+      messagesDiv.appendChild(msg);
+      /*messagesDiv.scrollTop = messagesDiv.scrollHeight;*/
+
+      /* ⭐ ESTA LÍNEA para auto-scroll */
+      safeScroll();
+    }
+
+    /* ------------------- LOGOUT ------------------- */
+    logoutBtn.onclick = () => {
+      ws.send(JSON.stringify({ type: "logout" }));
+      ws.close();
+    };
+
+    /* ⭐ Evita recarga infinita si el hosting cierra el contenedor */
+  ws.onclose = () => {
+    if (!document.hidden) {
+      location.href = "index.html";
+    }
+  };
+
+    /* ===========================================================
+       🟦 ARRASTRAR Y SOLTAR ARCHIVOS (DROPZONE)
+       =========================================================== */
+
+    const dropZone = document.getElementById("dropZone");
+
+    document.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("hidden");
+    });
+
+    document.addEventListener("dragleave", (e) => {
+      if (e.target === document || e.clientY <= 0) {
+        dropZone.classList.add("hidden");
+      }
+    });
+
+    document.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("hidden");
+
+      if (!e.dataTransfer.files.length) return;
+
+      selectedFiles = selectedFiles.concat(Array.from(e.dataTransfer.files));
+
+      updatePreview();
+    });
+
+    /* ===========================================================
+       🟩 PEGAR IMÁGENES DESDE EL PORTAPAPELES (CAPTURAS)
+       =========================================================== */
+    document.addEventListener("paste", function (event) {
+      if (!event.clipboardData || !event.clipboardData.items) return;
+
+      const items = event.clipboardData.items;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        // Solo si es imagen del portapapeles
+        if (item.type.indexOf("image") !== -1) {
+          const file = item.getAsFile();
+
+          selectedFiles.push(file); 
+          updatePreview(); 
+
+          event.preventDefault();
+        }
+      }
+    });
+
+  </script>
+</body>
+</html>

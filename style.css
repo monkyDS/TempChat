@@ -1,0 +1,265 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f7f7f7;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* HEADER */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0078D7;
+  color: white;
+  padding: 10px 20px;
+}
+.logo { font-weight: bold; font-size: 1.2em; }
+.logout {
+  background: #ff4747;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* CONNECT */
+.connect-container {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.connect-container button {
+  margin: 10px;
+  padding: 15px;
+  width: 200px;
+  border: none;
+  border-radius: 8px;
+  background: #0078D7;
+  color: white;
+  cursor: pointer;
+}
+
+/* MODAL */
+.connect-area {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 25px;
+  width: 320px;
+  max-width: 90%;
+  border-radius: 12px;
+  text-align: center;
+  z-index: 9999;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  animation: fadeIn 0.3s ease-out;
+}
+.connect-area img { width: 180px; }
+.hidden { display: none; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -60%); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* CHAT */
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+/* MENSAJES */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.message {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.incoming {
+  align-self: flex-start;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-bottom-left-radius: 0px;
+}
+.incoming strong {
+  color: #4a4a4a;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.outgoing {
+  align-self: flex-end;
+  background: #dcf8c6;
+  border-bottom-right-radius: 0px;
+}
+.outgoing strong {
+  color: #3a3a3a;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* PREVIEW ARCHIVOS */
+.file-preview {
+  background: #f1f1f1;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+.remove-file {
+  cursor: pointer;
+  color: red;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.hidden {
+  display: none;
+}
+
+/* INPUT AREA — SIEMPRE EN UNA FILA */
+.input-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+/* Caja de texto */
+#messageInput {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* Botón clip */
+.clip-btn {
+  font-size: 22px;
+  cursor: pointer;
+  background: #007bff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: white;
+  transition: 0.2s;
+}
+.clip-btn:hover { background: #005fcc; }
+
+/* Botón enviar */
+.send-btn {
+  font-size: 22px;
+  cursor: pointer;
+  background: #007bff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: white;
+  border: none;
+  transition: 0.2s;
+}
+.send-btn:hover { background: #005fcc; }
+
+/* FOOTER */
+footer {
+  background: #0078D7;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-size: 0.9em;
+  margin-top: auto;
+}
+
+/* 📱 RESPONSIVE — SIGUEN EN UNA FILA */
+@media (max-width: 600px) {
+
+  header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+
+  /* Mantener input y botones en línea */
+  .input-area {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  #messageInput {
+    flex: 1;
+  }
+
+  .clip-btn,
+  .send-btn {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 22px;
+    padding: 0;
+  }
+}
+
+/* 🔵 Zona de arrastre */
+.drop-zone {
+  border: 2px dashed #888;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  color: #555;
+  margin-bottom: 10px;
+  transition: 0.3s;
+  background: #f9f9f9;
+}
+
+.drop-zone.dragover {
+  border-color: #007bff;
+  background: #e3f0ff;
+  color: #007bff;
+}
+
+/* ⭐ ESTO para activar el scroll en la caja */
+    .messages {
+      flex: 1;
+      overflow-y: auto;      /* Activa scroll */
+      max-height: calc(100vh - 200px); /* Evita que crezca infinito */
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+}
